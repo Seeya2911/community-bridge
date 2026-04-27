@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Target, Shield, Users, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
 import { useToast } from '../App';
 import { motion } from 'framer-motion';
 import communityActionOne from '../assets/community-action-1.jpg';
+import ProcessSection from '../components/landing/ProcessSection';
+import TopBar from '../components/layout/TopBar';
 
 const AnimatedCounter = ({ from = 0, to, duration = 2 }) => {
   const [count, setCount] = useState(from);
@@ -28,12 +31,13 @@ export default function LandingPage() {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('NGO'); 
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
     showToast(`Authenticating Credentials...`, 'info');
     setTimeout(() => {
-      window.location.href = activeTab === 'Admin' ? '/admin' : activeTab === 'NGO' ? '/ngo' : '/volunteer';
+      navigate(activeTab === 'Admin' ? '/admin' : activeTab === 'NGO' ? '/ngo' : '/volunteer');
     }, 1000);
   };
 
@@ -44,25 +48,13 @@ export default function LandingPage() {
 
   return (
     <div className="bg-white min-h-screen font-sans text-slate-800 selection:bg-emerald-100 selection:text-emerald-900">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] bg-white border border-slate-300 rounded px-3 py-2 text-sm font-semibold text-slate-900">
+        Skip to main content
+      </a>
       
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50">
-        <div className="flex justify-between items-center px-8 md:px-12 h-[72px] max-w-[1400px] mx-auto">
-          <div className="font-sans font-bold text-[18px] text-slate-900 flex items-center cursor-pointer">
-            <span className="text-emerald-700 mr-2 text-[20px]">🌱</span> CommunityBridge
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-[14px] font-medium text-slate-600">
-            <a href="/features" className="hover:text-emerald-700 transition-colors">Features</a>
-            <a href="/how-it-works" className="hover:text-emerald-700 transition-colors">Methodology</a>
-            <a href="/impact" className="hover:text-emerald-700 transition-colors">Our Impact</a>
-          </div>
-          <button className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-6 py-2.5 rounded-md transition-colors text-[14px]" onClick={() => setLoginModalOpen(true)}>
-            Sign In
-          </button>
-        </div>
-      </nav>
+      <TopBar onSignIn={() => setLoginModalOpen(true)} />
 
-      <main className="pt-[72px] relative z-10 w-full">
+      <main id="main-content" className="pt-[72px] relative z-10 w-full">
         
         {/* Core Hero Layout (Serious, split screen styling) */}
         <div className="flex flex-col lg:flex-row min-h-[80vh] w-full">
@@ -82,12 +74,12 @@ export default function LandingPage() {
             </motion.p>
             
             <motion.div variants={itemVars} className="flex flex-col sm:flex-row gap-4 mb-12 w-full sm:w-auto">
-              <button className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-3.5 rounded-md text-[15px] font-medium transition-colors flex items-center justify-center gap-2" onClick={() => window.location.href='/join-ngo'}>
+              <Link to="/join-ngo" className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-3.5 rounded-md text-[15px] font-medium transition-colors flex items-center justify-center gap-2" aria-label="Register your organization">
                 Register Organization <ArrowRight size={18} />
-              </button>
-              <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-8 py-3.5 rounded-md text-[15px] font-medium transition-colors" onClick={() => window.location.href='/join-volunteer'}>
+              </Link>
+              <Link to="/join-volunteer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-8 py-3.5 rounded-md text-[15px] font-medium transition-colors text-center" aria-label="Join as a volunteer">
                 Join as Volunteer
-              </button>
+              </Link>
             </motion.div>
 
             <motion.div variants={itemVars} className="flex gap-12 items-center border-l-4 border-emerald-100 pl-6 mt-4">
@@ -104,7 +96,7 @@ export default function LandingPage() {
 
           {/* Right Image Block */}
           <div className="w-full lg:w-[50%] relative h-[500px] lg:h-auto bg-slate-100">
-             <img src={communityActionOne} alt="Community Bridge field action" className="w-full h-full object-cover object-center" />
+             <img src={communityActionOne} alt="Community Bridge field action" className="w-full h-full object-cover object-center" loading="eager" fetchPriority="high" decoding="async" />
              {/* Small professional inset metric over the image */}
              <div className="absolute bottom-8 left-8 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-sm border border-slate-200 flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center"><CheckCircle size={24} /></div>
@@ -116,41 +108,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Informational Section */}
-        <div className="py-[100px] px-8 bg-slate-50 border-t border-slate-200">
-          <div className="max-w-[1200px] mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-[36px] text-slate-900 font-bold tracking-tight mb-4">A Streamlined Chain of Action.</h2>
-              <p className="text-slate-600 text-[18px] max-w-2xl mx-auto leading-relaxed">Our infrastructure eliminates redundancy, ensuring critical aid is directed securely and instantly to verified zones of need.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="flex flex-col items-start bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                <div className="w-12 h-12 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center mb-6 border border-slate-200">
-                  <Target size={24} />
-                </div>
-                <h3 className="text-[20px] font-bold mb-3 text-slate-900">1. Instant Field Reports</h3>
-                <p className="text-slate-600 text-[15px] leading-relaxed">Operatives submit distress signals natively without relying on proprietary software installations.</p>
-              </div>
-              
-              <div className="flex flex-col items-start bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                <div className="w-12 h-12 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center mb-6 border border-slate-200">
-                  <Shield size={24} />
-                </div>
-                <h3 className="text-[20px] font-bold mb-3 text-slate-900">2. Algorithmic Triage</h3>
-                <p className="text-slate-600 text-[15px] leading-relaxed">Incoming structured data is automatically classified to isolate precise geolocations and resource requirements.</p>
-              </div>
-              
-              <div className="flex flex-col items-start bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center mb-6 border border-emerald-100">
-                  <Users size={24} />
-                </div>
-                <h3 className="text-[20px] font-bold mb-3 text-slate-900">3. Verified Deployment</h3>
-                <p className="text-slate-600 text-[15px] leading-relaxed">The closest authorized personnel matching the exact capability profile are dispatched via secure routing.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProcessSection />
       </main>
 
       {/* Login Modal */}

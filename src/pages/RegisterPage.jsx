@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { getStore, setStore } from '../mockData';
 import { useToast } from '../App';
 import communityActionTwo from '../assets/community-action-2.jpg';
+import RegisterVisualPanel from '../components/register/RegisterVisualPanel';
 
 export default function RegisterPage({ defaultType = 'NGO' }) {
   const [formType, setFormType] = useState(defaultType); // NGO or Volunteer
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const submitRegistration = (e) => {
     e.preventDefault();
@@ -31,28 +34,35 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
     
     setStore(store);
     showToast("Application submitted successfully! Redirecting...");
-    setTimeout(() => { window.location.href = '/'; }, 2000);
+    setTimeout(() => { navigate('/'); }, 2000);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
+      <a href="#registration-form" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] bg-white border border-slate-300 rounded px-3 py-2 text-sm font-semibold text-slate-900">
+        Skip to registration form
+      </a>
       {/* Left Form Area */}
       <div className="w-full lg:w-[45%] flex flex-col justify-center px-8 md:px-20 py-16 bg-white overflow-y-auto">
-        <a href="/" className="font-sans font-bold text-[20px] tracking-wide text-[var(--cb-green)] mb-12 flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+        <Link to="/" className="font-sans font-bold text-[20px] tracking-wide text-[var(--cb-green)] mb-12 flex items-center cursor-pointer hover:opacity-80 transition-opacity" aria-label="Go back to home page">
           ← CommunityBridge
-        </a>
+        </Link>
         
         <h1 className="font-sans text-[20px] font-bold text-slate-800 mb-2">Join the Platform</h1>
         <p className="text-slate-500 mb-10 font-medium">Be part of the rapid response network. Verified accounts usually get access within 24 hours.</p>
 
         <div className="flex bg-slate-100 p-1.5 rounded-lg mb-8 border border-slate-200 shadow-inner">
           <button 
+            type="button"
+            aria-pressed={formType === 'NGO'}
             className={`flex-1 py-3 text-[14px] font-bold rounded-md transition-all ${formType === 'NGO' ? 'bg-white text-[var(--cb-green)] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setFormType('NGO')}
           >
             Register as NGO
           </button>
           <button 
+            type="button"
+            aria-pressed={formType === 'Volunteer'}
             className={`flex-1 py-3 text-[14px] font-bold rounded-md transition-all ${formType === 'Volunteer' ? 'bg-white text-[var(--cb-green)] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setFormType('Volunteer')}
           >
@@ -60,7 +70,7 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
           </button>
         </div>
 
-        <motion.form key={formType} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} onSubmit={submitRegistration} className="space-y-6">
+        <motion.form id="registration-form" key={formType} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} onSubmit={submitRegistration} className="space-y-6" aria-live="polite">
           {formType === 'NGO' && (
             <div className="grid grid-cols-2 gap-8">
               <div className="col-span-2">
@@ -159,20 +169,7 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
         </motion.form>
       </div>
 
-      {/* Right Image Area */}
-      <div className="hidden lg:flex w-[55%] relative items-center justify-center bg-slate-50 border-l border-slate-200 overflow-hidden">
-        <img src={communityActionTwo} alt="Volunteer and NGO collaboration" className="w-full h-full object-cover object-center opacity-70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-        <div className="absolute inset-0 bg-emerald-900/40 mix-blend-overlay"></div>
-        
-        <div className="absolute bottom-20 left-16 right-16">
-          <motion.h2 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="font-sans text-slate-900 text-3xl font-bold leading-tight mb-6 tracking-tight">"The smallest act of kindness is worth more than the grandest intention."</motion.h2>
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="flex items-center gap-4">
-             <div className="h-[2px] w-10 bg-emerald-400"></div>
-             <p className="text-emerald-300 font-bold tracking-widest uppercase">Oscar Wilde</p>
-          </motion.div>
-        </div>
-      </div>
+      <RegisterVisualPanel imageSrc={communityActionTwo} />
     </div>
   );
 }

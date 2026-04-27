@@ -16,6 +16,9 @@ export default function Modal({ isOpen, onClose, title, children }) {
     <div 
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4 transition-opacity duration-200"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div 
         className="bg-white rounded-[var(--radius-xl)] shadow-[var(--shadow-modal)] w-full max-w-[600px] max-h-[90vh] flex flex-col animate-fade-in"
@@ -26,6 +29,8 @@ export default function Modal({ isOpen, onClose, title, children }) {
           <button 
             onClick={onClose}
             className="text-[var(--cb-gray)] hover:text-[var(--cb-slate)] transition-colors"
+            aria-label="Close dialog"
+            type="button"
           >
             <X size={20} />
           </button>
