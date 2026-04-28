@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStore, setStore } from '../mockData';
+import { db, auth } from '../firebaseStore';
+import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '../App';
 import communityActionTwo from '../assets/community-action-2.jpg';
 import RegisterVisualPanel from '../components/register/RegisterVisualPanel';
@@ -11,30 +13,54 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const submitRegistration = (e) => {
+  const submitRegistration = async (e) => {
     e.preventDefault();
-    const store = getStore();
     const isNgo = formType === 'NGO';
     const form = new FormData(e.target);
+    const email = form.get('email');
+    const password = form.get('password');
     
-    const payload = {
-      id: Date.now(), 
-      name: form.get('name'), 
-      email: form.get('email'),
-      contact: form.get('contact'),
-      status: "pending", 
-      appliedDate: new Date().toISOString().split('T')[0]
-    };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
 
-    if (isNgo) {
-      store.ngoRequests.push({ ...payload, regNumber: form.get('regNumber'), address: form.get('address'), website: form.get('website'), docs: ["Docs"] });
-    } else {
-      store.volunteerRequests.push({ ...payload, ngo: form.get('targetNgo'), gender: form.get('gender'), skills: [form.get('skills')], description: form.get('description'), doneVolunteering: form.get('doneVolunteering') === 'on' });
+      if (isNgo) {
+        await setDoc(doc(db, 'Users', uid), { 
+          id: uid,
+          name: form.get('name'), 
+          email: email,
+          contact: form.get('contact'),
+          regNumber: form.get('regNumber'), 
+          address: form.get('address'), 
+          website: form.get('website'),
+          status: "pending", 
+          role: "ngo",
+          verifiedAt: null,
+          appliedDate: new Date().toISOString()
+        });
+      } else {
+        await setDoc(doc(db, 'Users', uid), { 
+          id: uid,
+          name: form.get('name'), 
+          email: email,
+          contact: form.get('contact'),
+          gender: form.get('gender'), 
+          skills: [form.get('skills')], 
+          description: form.get('description'), 
+          status: "active",
+          role: "volunteer",
+          available: true,
+          tasksCompleted: 0, 
+          rating: 5.0,
+          joinedDate: new Date().toISOString()
+        });
+      }
+      showToast("Registration successful! Logging you in...", "success");
+      setTimeout(() => { navigate(isNgo ? '/ngo' : '/volunteer'); }, 2000);
+    } catch (error) {
+      console.error(error);
+      showToast(`Registration failed: ${error.message}`, "error");
     }
-    
-    setStore(store);
-    showToast("Application submitted successfully! Redirecting...");
-    setTimeout(() => { navigate('/'); }, 2000);
   };
 
   return (
@@ -86,6 +112,10 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
                 <input required type="email" name="email" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="contact@ngo.org" />
               </div>
               <div>
+                <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Password</label>
+                <input required type="password" name="password" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Minimum 6 characters" minLength="6" />
+              </div>
+              <div>
                 <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Contact Number</label>
                 <input required name="contact" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="+91 98765 43210" />
               </div>
@@ -107,15 +137,6 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
 
           {formType === 'Volunteer' && (
             <div className="grid grid-cols-2 gap-8">
-              <div className="col-span-2">
-                <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Target NGO Affiliation</label>
-                <select required name="targetNgo" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-                  <option value="">Which active platform NGO do you want to join?</option>
-                  <option value="Asha Foundation">Asha Foundation</option>
-                  <option value="Sahyog Trust">Sahyog Trust</option>
-                  <option value="GreenHope NGO">GreenHope NGO</option>
-                </select>
-              </div>
               <div className="col-span-2">
                 <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Full Name</label>
                 <input required name="name" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="e.g., Priya Sharma" />
@@ -139,6 +160,10 @@ export default function RegisterPage({ defaultType = 'NGO' }) {
               <div>
                 <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Email Address</label>
                 <input required type="email" name="email" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="priya@example.com" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Password</label>
+                <input required type="password" name="password" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[14px] font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Minimum 6 characters" minLength="6" />
               </div>
               <div>
                 <label className="block text-[12px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Contact Number</label>

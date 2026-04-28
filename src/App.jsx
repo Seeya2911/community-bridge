@@ -1,7 +1,8 @@
 import { lazy, Suspense, useState, useEffect, createContext, useContext } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
-import { initializeStore } from './mockData';
+import { seedDatabase, auth, useStore } from './firebaseStore';
+import { signOut } from 'firebase/auth';
 
 const MainAdminPage = lazy(() => import('./pages/MainAdminPage'));
 const NGODashboardPage = lazy(() => import('./pages/NGODashboardPage'));
@@ -11,6 +12,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const MethodologyPage = lazy(() => import('./pages/MethodologyPage'));
 const ImpactPage = lazy(() => import('./pages/ImpactPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 
 // ---- Toast Subsystem ----
 const ToastContext = createContext({ showToast: () => {} });
@@ -80,6 +82,7 @@ function AppRoutes() {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/how-it-works" element={<MethodologyPage />} />
         <Route path="/impact" element={<ImpactPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
@@ -88,19 +91,21 @@ function AppRoutes() {
 
 export default function App() {
   useEffect(() => {
-    initializeStore();
+    seedDatabase().catch(console.error);
   }, []);
 
   return (
     <ToastManager>
       <AppRoutes />
-      {/* Dev Page Accessor */}
+      {/* Dev Page Accessor & Quick Login */}
       <nav aria-label="Developer quick routes" className="fixed bottom-4 left-4 z-[999] flex gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
         <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest pl-2 pr-2 flex items-center">Dev</span>
-        <Link to="/" className="px-3 py-1.5 bg-white hover:bg-slate-700 text-slate-900 text-[11px] rounded-lg transition-colors font-bold tracking-widest uppercase shadow-inner" aria-label="Open landing page">Landing</Link>
+        <Link to="/" className="px-3 py-1.5 bg-white hover:bg-slate-700 text-slate-900 hover:text-white text-[11px] rounded-lg transition-colors font-bold tracking-widest uppercase shadow-inner" aria-label="Open landing page">Landing</Link>
+        <Link to="/login" className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] rounded-lg border border-blue-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Login">Login</Link>
         <Link to="/ngo" className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] rounded-lg border border-emerald-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Open NGO dashboard">NGO</Link>
-        <Link to="/volunteer" className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] rounded-lg border border-blue-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Open volunteer dashboard">Volunteer</Link>
-        <Link to="/admin" className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] rounded-lg border border-purple-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Open admin dashboard">Admin</Link>
+        <Link to="/volunteer" className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] rounded-lg border border-purple-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Open volunteer dashboard">Volunteer</Link>
+        <Link to="/admin" className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] rounded-lg border border-red-500/30 transition-colors font-bold tracking-widest uppercase" aria-label="Open admin dashboard">Admin</Link>
+        <button onClick={() => signOut(auth)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-[11px] rounded-lg transition-colors font-bold tracking-widest uppercase" aria-label="Force Logout">Log Out</button>
       </nav>
     </ToastManager>
   );
