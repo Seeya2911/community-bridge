@@ -5,6 +5,7 @@ import { useToast } from '../App';
 import StatusBadge from '../components/StatusBadge';
 import StatCard from '../components/StatCard';
 import NotificationBell from '../components/NotificationBell';
+import LogoutButton from '../components/LogoutButton';
 import { motion } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
 
@@ -70,7 +71,10 @@ export default function MainAdminPage() {
         <div className="max-w-[1400px] mx-auto">
           <div className="flex justify-between items-center mb-10">
             <h1 className="font-sans text-2xl text-slate-900 font-bold tracking-tight">{activeNav}</h1>
-            <NotificationBell />
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <LogoutButton label="Log Out" />
+            </div>
           </div>
 
           {activeNav === 'Overview' && (

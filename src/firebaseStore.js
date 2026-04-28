@@ -3,6 +3,7 @@ import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getAnalytics } from "firebase/analytics";
 import { useState, useEffect } from 'react';
+import { initialData as demoData } from './mockData';
 
 // === FIREBASE CONFIGURATION ===
 const firebaseConfig = {
@@ -19,6 +20,102 @@ const app = initializeApp(firebaseConfig);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+const demoUsers = demoData.users || [];
+const demoTasks = demoData.tasks || [];
+const demoAssignments = demoData.assignments || [];
+const demoNotifications = demoData.notifications || [];
+const DEMO_SESSION_KEY = 'cb_demo_session';
+
+export const getDemoSession = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return JSON.parse(window.localStorage.getItem(DEMO_SESSION_KEY) || 'null');
+  } catch {
+    return null;
+  }
+};
+
+export const setDemoSession = (session) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(session));
+};
+
+export const clearDemoSession = () => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(DEMO_SESSION_KEY);
+};
+
+const inferRoleFromEmail = (email = '') => {
+  const normalized = String(email).toLowerCase();
+  if (normalized.includes('admin')) return 'admin';
+  if (normalized.includes('field')) return 'field_worker';
+  if (normalized.includes('vol')) return 'volunteer';
+  if (normalized.includes('ngo') || normalized.includes('foundation') || normalized.includes('trust') || normalized.includes('org')) return 'ngo';
+  return 'ngo';
+};
+
+const getDemoTemplateUser = (email = '') => {
+  const normalized = String(email).toLowerCase();
+  const exactMatch = demoUsers.find(user => String(user.email).toLowerCase() === normalized);
+  if (exactMatch) return exactMatch;
+
+  const role = inferRoleFromEmail(email);
+  const roleMatch = demoUsers.find(user => user.role === role);
+  return roleMatch || demoUsers[0] || null;
+};
+
+const buildFallbackState = (currentUser) => {
+  const templateUser = getDemoTemplateUser(currentUser?.email || '');
+  const inferredRole = inferRoleFromEmail(currentUser?.email || '');
+  const baseProfile = templateUser ? { ...templateUser } : { name: 'Demo User', role: inferredRole, status: inferredRole === 'ngo' ? 'approved' : 'active', available: inferredRole !== 'ngo' };
+  const sourceId = templateUser?.id || baseProfile.id || currentUser?.uid || 'demo-user';
+
+  const profile = {
+    ...baseProfile,
+    id: currentUser?.uid || sourceId,
+    email: currentUser?.email || baseProfile.email || '',
+    role: baseProfile.role || inferredRole,
+    status: baseProfile.status || (inferredRole === 'ngo' ? 'approved' : 'active'),
+    available: typeof baseProfile.available === 'boolean' ? baseProfile.available : inferredRole !== 'ngo'
+  };
+
+  const remapId = (value) => (value === sourceId ? profile.id : value);
+
+  const users = demoUsers.map(user => user.id === sourceId ? {
+    ...user,
+    id: profile.id,
+    name: profile.name,
+    email: profile.email,
+    role: profile.role,
+    status: profile.status,
+    available: profile.available
+  } : { ...user });
+
+  if (!users.some(user => user.id === profile.id)) {
+    users.unshift(profile);
+  }
+
+  return {
+    profile,
+    users,
+    tasks: demoTasks.map(task => ({
+      ...task,
+      created_by: remapId(task.created_by),
+      assigned_to: remapId(task.assigned_to),
+      assigned_by: remapId(task.assigned_by)
+    })),
+    assignments: demoAssignments.map(assignment => ({
+      ...assignment,
+      volunteer_id: remapId(assignment.volunteer_id),
+      ngo_id: remapId(assignment.ngo_id)
+    })),
+    notifications: demoNotifications.map(notification => ({
+      ...notification,
+      user_id: remapId(notification.user_id)
+    }))
+  };
+};
 
 // Custom hook to provide real-time updates to components
 export const useStore = () => {
@@ -44,9 +141,30 @@ export const useStore = () => {
     let unsubAssignments = () => {};
     let unsubNotifications = () => {};
     let unsubProfile = () => {};
+    const demoSession = getDemoSession();
+
+    if (demoSession?.email) {
+      const fallbackState = buildFallbackState({ email: demoSession.email, uid: demoSession.uid || `demo-${demoSession.email}` });
+      setStore(prev => ({
+        ...prev,
+        authUser: { uid: fallbackState.profile.id, email: fallbackState.profile.email },
+        userRole: fallbackState.profile.role,
+        userProfile: fallbackState.profile,
+        users: fallbackState.users,
+        tasks: fallbackState.tasks,
+        assignments: fallbackState.assignments.filter(a => a.volunteer_id === fallbackState.profile.id || a.ngo_id === fallbackState.profile.id || fallbackState.profile.role === 'admin'),
+        notifications: fallbackState.notifications.filter(n => n.user_id === fallbackState.profile.id || fallbackState.profile.role === 'admin'),
+        usersLoading: false,
+        tasksLoading: false,
+        assignmentsLoading: false,
+        notificationsLoading: false,
+        loading: false
+      }));
+    }
 
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        const fallbackState = buildFallbackState(user);
         // Find user profile in Users collection only (Unified Role Storage)
         unsubProfile = onSnapshot(doc(db, 'Users', user.uid), (userSnap) => {
           if (userSnap.exists()) {
@@ -60,7 +178,8 @@ export const useStore = () => {
 
             // Dependent queries based on user
             unsubUsers = onSnapshot(query(collection(db, 'Users'), where("status", "==", "active")), (snapshot) => {
-              setStore(prev => ({ ...prev, users: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), usersLoading: false }));
+              const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, users: users.length ? users : fallbackState.users, usersLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
 
             // Role-based tasks query
@@ -71,31 +190,65 @@ export const useStore = () => {
                tasksQuery = query(collection(db, 'Tasks'), where("status", "in", ["created", "assigned", "in_progress", "completed"]));
             }
             unsubTasks = onSnapshot(tasksQuery, (snapshot) => {
-              setStore(prev => ({ ...prev, tasks: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), tasksLoading: false }));
+              const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, tasks: tasks.length ? tasks : fallbackState.tasks, tasksLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
 
             unsubAssignments = onSnapshot(query(collection(db, 'Assignments'), where("volunteer_id", "==", user.uid)), (snapshot) => {
-              setStore(prev => ({ ...prev, assignments: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), assignmentsLoading: false }));
+              const assignments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, assignments: assignments.length ? assignments : fallbackState.assignments.filter(a => a.volunteer_id === user.uid), assignmentsLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
 
             unsubNotifications = onSnapshot(query(collection(db, 'Notifications'), where("user_id", "==", user.uid), orderBy("createdAt", "desc")), (snapshot) => {
-              setStore(prev => ({ ...prev, notifications: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), notificationsLoading: false }));
+              const notifications = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, notifications: notifications.length ? notifications : fallbackState.notifications.filter(n => n.user_id === user.uid), notificationsLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
 
           } else if (user.email === 'admin@communitybridge.org') {
             // Admin fallback
-            setStore(prev => ({ ...prev, authUser: user, userProfile: { id: 'admin', email: user.email, name: 'Admin' }, userRole: 'admin' }));
+            setStore(prev => ({ ...prev, authUser: user, userProfile: fallbackState.profile, userRole: 'admin' }));
             
             unsubUsers = onSnapshot(collection(db, 'Users'), (snapshot) => {
-              setStore(prev => ({ ...prev, users: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), usersLoading: false }));
+              const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, users: users.length ? users : fallbackState.users, usersLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
             unsubTasks = onSnapshot(collection(db, 'Tasks'), (snapshot) => {
-              setStore(prev => ({ ...prev, tasks: snapshot.docs.map(d => ({ id: d.id, ...d.data() })), tasksLoading: false }));
+              const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, tasks: tasks.length ? tasks : fallbackState.tasks, tasksLoading: false }));
             }, (err) => console.error("Firestore listener error:", err));
-            setStore(prev => ({ ...prev, assignmentsLoading: false, notificationsLoading: false }));
+            setStore(prev => ({
+              ...prev,
+              assignments: fallbackState.assignments,
+              notifications: fallbackState.notifications.filter(n => n.user_id === user.uid || n.user_id === 'admin-user'),
+              assignmentsLoading: false,
+              notificationsLoading: false
+            }));
+          } else {
+            // No Firestore profile yet, use the demo state so the app can still render.
+            setStore(prev => ({ ...prev, authUser: user, userProfile: fallbackState.profile, userRole: fallbackState.profile.role }));
+
+            unsubUsers = onSnapshot(collection(db, 'Users'), (snapshot) => {
+              const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, users: users.length ? users : fallbackState.users, usersLoading: false }));
+            }, (err) => console.error("Firestore listener error:", err));
+
+            unsubTasks = onSnapshot(collection(db, 'Tasks'), (snapshot) => {
+              const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, tasks: tasks.length ? tasks : fallbackState.tasks, tasksLoading: false }));
+            }, (err) => console.error("Firestore listener error:", err));
+
+            unsubAssignments = onSnapshot(collection(db, 'Assignments'), (snapshot) => {
+              const assignments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, assignments: assignments.length ? assignments : fallbackState.assignments, assignmentsLoading: false }));
+            }, (err) => console.error("Firestore listener error:", err));
+
+            unsubNotifications = onSnapshot(collection(db, 'Notifications'), (snapshot) => {
+              const notifications = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+              setStore(prev => ({ ...prev, notifications: notifications.length ? notifications : fallbackState.notifications.filter(n => n.user_id === user.uid), notificationsLoading: false }));
+            }, (err) => console.error("Firestore listener error:", err));
           }
         }, (err) => console.error("Firestore listener error:", err));
-      } else {
+      } else if (!demoSession?.email) {
         setStore(prev => ({ 
           ...prev, 
           authUser: null, userRole: null, userProfile: null, 

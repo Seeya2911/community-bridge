@@ -1,5 +1,213 @@
 export const initialData = {
   // ... existing initialData (kept same as before, see below)
+  users: [
+    {
+      id: 'ngo-asha',
+      name: 'Asha Foundation',
+      email: 'asha@ngo.org',
+      password: 'ASHA@2025',
+      role: 'ngo',
+      status: 'approved',
+      regNumber: 'NGO/MH/2019/001',
+      contact: '9876543210',
+      address: 'Dharavi, Mumbai',
+      website: 'ashafoundation.org',
+      appliedDate: '2025-04-20',
+      available: false,
+      tasksCompleted: 0
+    },
+    {
+      id: 'ngo-greenhope',
+      name: 'GreenHope NGO',
+      email: 'green@hope.org',
+      password: 'GH@2025',
+      role: 'ngo',
+      status: 'approved',
+      regNumber: 'NGO/MH/2018/012',
+      contact: '9988776655',
+      address: 'Govandi, Mumbai',
+      website: 'greenhope.org',
+      appliedDate: '2025-04-10',
+      available: false,
+      tasksCompleted: 0
+    },
+    {
+      id: 'vol-priya',
+      name: 'Priya Sharma',
+      email: 'priya@gmail.com',
+      password: 'PS@2025',
+      role: 'volunteer',
+      status: 'active',
+      skills: ['Medical', 'Teaching'],
+      contact: '9876500001',
+      location: 'Dharavi',
+      rating: 4.8,
+      tasksCompleted: 7,
+      available: true,
+      appliedDate: '2025-03-01',
+      badges: ['First Responder', '5-Star']
+    },
+    {
+      id: 'vol-rahul',
+      name: 'Rahul Mehta',
+      email: 'rahul@gmail.com',
+      password: 'RM@2025',
+      role: 'volunteer',
+      status: 'assigned',
+      skills: ['Logistics', 'Driving'],
+      contact: '9876500002',
+      location: 'Kurla',
+      rating: 4.5,
+      tasksCompleted: 12,
+      available: false,
+      appliedDate: '2025-02-15',
+      badges: ['Marathon', 'First Responder']
+    },
+    {
+      id: 'field-meena',
+      name: 'Meena Patil',
+      email: 'meena@field.local',
+      password: 'MEENA@2025',
+      role: 'field_worker',
+      status: 'active',
+      skills: ['Medical', 'Logistics'],
+      contact: '9000000001',
+      location: 'Dharavi',
+      rating: 4.9,
+      tasksCompleted: 5,
+      available: true,
+      appliedDate: '2025-03-05'
+    },
+    {
+      id: 'admin-user',
+      name: 'Admin',
+      email: 'admin@communitybridge.org',
+      password: 'ADMIN@2025',
+      role: 'admin',
+      status: 'active',
+      available: false,
+      appliedDate: '2025-01-01'
+    }
+  ],
+  tasks: [
+    {
+      id: 'task-001',
+      type: 'Food',
+      location: 'Dharavi Sector 4',
+      urgency: 5,
+      people_affected: 12,
+      status: 'created',
+      description: 'Family cluster with no ration for 3 days.',
+      created_by: 'field-meena',
+      assigned_to: null,
+      assigned_by: null,
+      updatedAt: '2026-04-27T08:30:00Z'
+    },
+    {
+      id: 'task-002',
+      type: 'Medical',
+      location: 'Kurla West',
+      urgency: 4,
+      people_affected: 3,
+      status: 'assigned',
+      description: 'Elderly residents need medication and mobility support.',
+      created_by: 'field-meena',
+      assigned_to: 'vol-priya',
+      assigned_by: 'ngo-asha',
+      updatedAt: '2026-04-27T10:00:00Z'
+    },
+    {
+      id: 'task-003',
+      type: 'Shelter',
+      location: 'Chembur',
+      urgency: 4,
+      people_affected: 50,
+      status: 'created',
+      description: 'Temporary shelter needed after heavy rain damage.',
+      created_by: 'field-meena',
+      assigned_to: null,
+      assigned_by: null,
+      updatedAt: '2026-04-27T06:00:00Z'
+    },
+    {
+      id: 'task-004',
+      type: 'Education',
+      location: 'Govandi',
+      urgency: 2,
+      people_affected: 20,
+      status: 'completed',
+      description: 'After-school tutoring support delivered.',
+      created_by: 'field-meena',
+      assigned_to: 'vol-rahul',
+      assigned_by: 'ngo-greenhope',
+      updatedAt: '2026-04-26T14:00:00Z'
+    },
+    {
+      id: 'task-005',
+      type: 'Water',
+      location: 'Mankhurd',
+      urgency: 3,
+      people_affected: 8,
+      status: 'created',
+      description: 'Water supply disrupted, no access for 2 days.',
+      created_by: 'field-meena',
+      assigned_to: null,
+      assigned_by: null,
+      updatedAt: '2026-04-27T11:20:00Z'
+    }
+  ],
+  assignments: [
+    {
+      id: 'assign-001',
+      task_id: 'task-002',
+      volunteer_id: 'vol-priya',
+      ngo_id: 'ngo-asha',
+      status: 'assigned',
+      assignedAt: '2026-04-27T10:00:00Z',
+      updatedAt: '2026-04-27T10:00:00Z'
+    },
+    {
+      id: 'assign-002',
+      task_id: 'task-004',
+      volunteer_id: 'vol-rahul',
+      ngo_id: 'ngo-greenhope',
+      status: 'completed',
+      assignedAt: '2026-04-26T14:00:00Z',
+      updatedAt: '2026-04-26T18:15:00Z'
+    }
+  ],
+  notifications: [
+    {
+      id: 'note-001',
+      user_id: 'ngo-asha',
+      type: 'urgent_alert',
+      title: 'CRITICAL ALERT',
+      message: 'Urgent Food assistance required at Dharavi Sector 4. Respond if nearby.',
+      priority: 'high',
+      read: false,
+      createdAt: '2026-04-27T08:35:00Z'
+    },
+    {
+      id: 'note-002',
+      user_id: 'vol-priya',
+      type: 'task_assigned',
+      title: 'New Mission Directive',
+      message: 'You have been assigned to a new task. Acknowledge ASAP.',
+      priority: 'high',
+      read: false,
+      createdAt: '2026-04-27T10:01:00Z'
+    },
+    {
+      id: 'note-003',
+      user_id: 'ngo-greenhope',
+      type: 'task_completed',
+      title: 'Mission Accomplished',
+      message: 'Volunteer has successfully completed the assigned task.',
+      priority: 'medium',
+      read: true,
+      createdAt: '2026-04-26T18:20:00Z'
+    }
+  ],
   ngoRequests: [
     { id: 1, name: "Asha Foundation", regNumber: "NGO/MH/2019/001",
       email: "asha@ngo.org", contact: "9876543210", address: "Dharavi, Mumbai",

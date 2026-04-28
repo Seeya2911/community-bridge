@@ -2,11 +2,23 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebaseStore';
+import { auth, db, setDemoSession } from '../firebaseStore';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from '../App';
 import communityActionTwo from '../assets/community-action-2.jpg';
 import RegisterVisualPanel from '../components/register/RegisterVisualPanel';
+import { initialData as demoData } from '../mockData';
+
+const demoAccounts = [
+  ...(demoData.users || []),
+  ...(demoData.ngoRequests || []).filter(account => account.username && account.password),
+  ...(demoData.volunteerRequests || []).filter(account => account.username && account.password)
+];
+
+const findDemoAccount = (email, password) => {
+  const normalizedEmail = String(email).toLowerCase();
+  return demoAccounts.find(account => String(account.email || account.username || '').toLowerCase() === normalizedEmail && account.password === password) || null;
+};
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -41,6 +53,23 @@ export default function LoginPage() {
       }
       showToast("Logged in successfully!", "success");
     } catch (error) {
+      const demoAccount = findDemoAccount(email, password);
+      if (error?.code === 'auth/invalid-credential' && demoAccount) {
+        setDemoSession({
+          uid: demoAccount.id,
+          email: demoAccount.email || demoAccount.username,
+          role: demoAccount.role || (demoAccount.name === 'Admin' ? 'admin' : 'ngo')
+        });
+
+        if (demoAccount.role === 'admin' || demoAccount.name === 'Admin') navigate('/admin');
+        else if (demoAccount.role === 'ngo') navigate('/ngo');
+        else navigate('/volunteer');
+
+        showToast(`Logged in as ${demoAccount.name || demoAccount.email || 'demo user'}`, 'success');
+        setLoading(false);
+        return;
+      }
+
       console.error(error);
       showToast(`Login failed: ${error.message}`, "error");
     } finally {
@@ -58,6 +87,18 @@ export default function LoginPage() {
         
         <h1 className="font-sans text-[30px] font-bold text-slate-800 mb-2">Welcome Back</h1>
         <p className="text-slate-500 mb-10 font-medium">Log in to your command center.</p>
+
+        <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-[13px] text-slate-700">
+          <p className="font-bold uppercase tracking-widest text-emerald-700 mb-2">Demo accounts</p>
+          <div className="space-y-1">
+            <p>Admin: admin@communitybridge.org / ADMIN@2025</p>
+            <p>NGO: asha@ngo.org / ASHA@2025</p>
+            <p>NGO: green@hope.org / GH@2025</p>
+            <p>Volunteer: priya@gmail.com / PS@2025</p>
+            <p>Volunteer: rahul@gmail.com / RM@2025</p>
+            <p>Field worker: meena@field.local / MEENA@2025</p>
+          </div>
+        </div>
 
         <motion.form onSubmit={handleLogin} className="space-y-6">
           <div>

@@ -7,6 +7,7 @@ import StatusBadge from '../components/StatusBadge';
 import MapMock from '../components/MapMock';
 import EmptyState from '../components/EmptyState';
 import NotificationBell from '../components/NotificationBell';
+import LogoutButton from '../components/LogoutButton';
 import { MapPin, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
@@ -158,6 +159,7 @@ export default function VolunteerDashboardPage() {
         
         <div className="flex items-center gap-6">
           <NotificationBell />
+          <LogoutButton label="Log Out" className="shrink-0" />
           <div className="flex items-center gap-4 bg-slate-50/60 pr-2 pl-6 py-2.5 rounded-full border border-slate-200  shadow-inner">
             <span className={`text-[12px] font-bold tracking-widest uppercase ${isAvailable ? 'text-emerald-700' : 'text-slate-500'}`}>
               {isAvailable ? '🟢 Online / Ready for Ops' : '🔴 Standby Module'}

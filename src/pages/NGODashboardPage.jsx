@@ -5,6 +5,7 @@ import { useToast } from '../App';
 import StatusBadge from '../components/StatusBadge';
 import StatCard from '../components/StatCard';
 import MapMock from '../components/MapMock';
+import LogoutButton from '../components/LogoutButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBell from '../components/NotificationBell';
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -116,6 +117,7 @@ export default function NGODashboardPage() {
         
         <div className="flex gap-5 w-full justify-end items-center">
            <NotificationBell />
+            <LogoutButton label="Log Out" className="shrink-0" />
            <select className="px-5 py-2.5 rounded-xl bg-slate-50/50 border border-slate-200 text-[14px] outline-none hover:border-emerald-500/50 transition-colors cursor-pointer focus:ring-1 focus:ring-emerald-500" value={needFilter} onChange={e=>setNeedFilter(e.target.value)}>
              <option className="text-black" value="All">Need Type Filter: Offline</option>
              <option className="text-black" value="Food">Food Infrastructure</option>
@@ -135,8 +137,14 @@ export default function NGODashboardPage() {
       <div className="flex-1 flex overflow-hidden h-[calc(100vh-80px)]">
         
         {/* Left Side - Animated Interactive Map View */}
-        <motion.div initial={{ x: -100 }} animate={{ x: 0 }} transition={{ type: "spring", stiffness: 100 }} className="w-[50%] h-full bg-slate-50 shrink-0 flex flex-col relative z-10 border-r border-slate-200 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
-          <MapMock needs={filteredNeeds} compact={false} />
+        <motion.div initial={{ x: -100 }} animate={{ x: 0 }} transition={{ type: "spring", stiffness: 100 }} className="w-[50%] h-full min-h-0 shrink-0 flex flex-col relative z-10 border-r border-slate-200 shadow-[20px_0_50px_rgba(0,0,0,0.5)] bg-[#0f172a]">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-slate-950/80 text-slate-200 text-[12px] font-bold uppercase tracking-widest">
+            <span>Live Incident Map</span>
+            <span>{filteredNeeds.length} pins</span>
+          </div>
+          <div className="flex-1 p-4 min-h-0 flex">
+            <MapMock needs={filteredNeeds} compact={false} />
+          </div>
         </motion.div>
 
         {/* Right Side - Content/Tabs */}
